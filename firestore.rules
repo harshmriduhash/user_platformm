@@ -1,0 +1,25 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    match /userQuizResults/{userId} {
+      allow read: if isOwner(userId);
+      
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['userId', 'responses', 'submittedAt'])
+        && request.resource.data.userId == userId
+        && request.resource.data.responses is map
+        && request.resource.data.submittedAt is string;
+      
+      allow delete: if false;
+    }
+  }
+} 
